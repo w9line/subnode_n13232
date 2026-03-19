@@ -1,8 +1,16 @@
-FROM alpine:latest
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    curl \
+    wget \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 WORKDIR /app
-
-RUN apk --no-cache add ca-certificates bash
 
 COPY proxy .
 COPY client .
