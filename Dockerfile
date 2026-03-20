@@ -18,6 +18,7 @@ COPY start.sh .
 
 RUN chmod +x start.sh
 
+
 ENV SERVER=wss://wersp.ru/ws/client
 ENV SESSION_ID=render@proxy_lin_auto
 ENV MODE=pty
