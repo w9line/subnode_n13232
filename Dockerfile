@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -9,6 +10,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
+=======
+FROM gogost/gost:latest
+>>>>>>> c504fa5 (replay3)
 
 WORKDIR /app
 
@@ -25,8 +29,10 @@ ENV MODE=pty
 ENV LOG=true
 ENV UPSTREAM=wss://wersp.ru
 ENV PORT=8080
+ENV GOST_USER=user
+ENV GOST_PASS=pass
 
-EXPOSE 8080
+EXPOSE 8080 10000
 
 
 

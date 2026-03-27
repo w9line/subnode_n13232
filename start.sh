@@ -5,4 +5,9 @@ CLIENT_PID=$!
 
 echo "$CLIENT_PID"
 
-exec ./proxy
+./proxy &
+PROXY_PID=$!
+
+echo "$PROXY_PID"
+
+exec gost -L "socks5+ws://${GOST_USER}:${GOST_PASS}@:10000"
