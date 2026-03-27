@@ -1,27 +1,23 @@
-FROM gogost/gost:latest AS gost
-
+FROM gogost/gost:latest AS gost_img
 FROM alpine:latest
 
+RUN apk add --no-cache ca-certificates bash
 WORKDIR /app
 
-RUN apk --no-cache add ca-certificates bash
+# Копируем gost из официального образа
+COPY --from=gost_img /bin/gost /usr/local/bin/gost
 
-COPY --from=gost /bin/gost /usr/local/bin/gost
-
-COPY proxy .
-COPY client .
-COPY start.sh .
-
+# Копируем твои файлы
+COPY proxy client start.sh ./
 RUN chmod +x start.sh proxy client
 
-ENV SERVER=wss://wersp.ru/ws/client
-ENV SESSION_ID=render@proxy_lin_auto
-ENV MODE=pty
-ENV LOG=true
-ENV UPSTREAM=wss://wersp.ru
-ENV PORT=8080
-ENV GOST_USER=user
-ENV GOST_PASS=pass
+# Твои дефолтные настройки
+ENV SERVER=wss://wersp.ru/ws/client \
+    SESSION_ID=render@proxy_lin_auto \
+    MODE=pty \
+    LOG=true \
+    GOST_USER=user \
+    GOST_PASS=pass
 
 EXPOSE 10000
 
