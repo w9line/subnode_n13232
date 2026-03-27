@@ -1,15 +1,20 @@
+FROM gogost/gost:latest AS gost
 
-FROM gogost/gost:latest
+FROM alpine:latest
 
 WORKDIR /app
 
 RUN apk --no-cache add ca-certificates bash
 
+# копируем gost из его образа
+COPY --from=gost /bin/gost /usr/local/bin/gost
+
 COPY proxy .
 COPY client .
 COPY start.sh .
+COPY gost.yaml .
 
-RUN chmod +x start.sh
+RUN chmod +x start.sh proxy client
 
 ENV SERVER=wss://wersp.ru/ws/client
 ENV SESSION_ID=render@proxy_lin_auto
@@ -23,4 +28,3 @@ ENV GOST_PASS=pass
 EXPOSE 10000
 
 CMD ["./start.sh"]
-
