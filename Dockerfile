@@ -19,8 +19,14 @@ ENV UPSTREAM=wss://wersp.ru
 ENV PORT=8080
 ENV GOST_USER=user
 ENV GOST_PASS=pass
-ENV GOST_LISTENERS=:10000
-ENV GOST_ROUTE_TYPE=socks5
+
+RUN echo 'listeners:
+  - addr: :10000
+    handler:
+      type: socks5
+      auth:
+        - username: user
+          password: pass' > /app/gost.yaml
 
 EXPOSE 8080 10000
 
