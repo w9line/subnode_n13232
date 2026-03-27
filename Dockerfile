@@ -6,13 +6,11 @@ WORKDIR /app
 
 RUN apk --no-cache add ca-certificates bash
 
-# копируем gost из его образа
 COPY --from=gost /bin/gost /usr/local/bin/gost
 
 COPY proxy .
 COPY client .
 COPY start.sh .
-COPY gost.yaml .
 
 RUN chmod +x start.sh proxy client
 
