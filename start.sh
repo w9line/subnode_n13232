@@ -10,4 +10,4 @@ PROXY_PID=$!
 
 echo "$PROXY_PID"
 
-exec gost -L "socks5+ws://:10000"
+exec gost -C /app/gost.yaml
