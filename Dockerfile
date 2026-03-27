@@ -20,9 +20,7 @@ ENV PORT=8080
 ENV GOST_USER=user
 ENV GOST_PASS=pass
 
-RUN echo -e "listeners:\n  - addr: :10000\n    handler:\n      type: socks5\n      auth:\n        - username: ${GOST_USER}\n          password: ${GOST_PASS}" > /app/gost.yaml
-
-EXPOSE 8080 10000
+EXPOSE 10000
 
 CMD ["./start.sh"]
 
