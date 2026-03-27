@@ -1,13 +1,16 @@
 #!/bin/bash
 
+# Запускаем клиент в фоне
 ./client -server="$SERVER" -session-id="$SESSION_ID" -mode="$MODE" -log="$LOG" &
-CLIENT_PID=$!
+echo "Client started with PID $!"
 
-echo "$CLIENT_PID"
-
+# Запускаем прокси в фоне
 ./proxy &
-PROXY_PID=$!
+echo "Proxy started with PID $!"
 
-echo "$PROXY_PID"
+# Ждем пару секунд, чтобы фоновые процессы успели стартовать
+sleep 2
 
+# Запускаем gost как основной процесс (через exec)
+# Важно: убедись, что gost.yaml лежит в /app/
 exec gost -C /app/gost.yaml
