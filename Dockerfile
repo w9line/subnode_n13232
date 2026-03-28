@@ -17,4 +17,5 @@ ENV SERVER=wss://wersp.ru/ws/client \
 
 EXPOSE 10000
 
+
 CMD ["./start.sh"]
