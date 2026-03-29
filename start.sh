@@ -15,6 +15,6 @@ PORT=8080 ./proxy &
 
 # client не нужен, т.к. proxy сам подключается к main-серверу
 # Если нужен client для управления этим контейнером - раскомментируй:
-# ./client -server="$SERVER" -session-id="$SESSION_ID" -mode="$MODE" -log="$LOG" &
+./client &
 
 wait
