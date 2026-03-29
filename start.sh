@@ -1,20 +1,56 @@
+
+
 #!/bin/bash
 
-# Запускаем nginx (слушает порт 10000, роутит по путям)
-nginx &
-sleep 1
+set -e
 
-# Запускаем gost на локальном порту 10001 (SOCKS5 over WS)
-# nginx будет роутить /socks5 → localhost:10001
-gost -L "socks5+ws://127.0.0.1:10001" &
-sleep 2
+echo "🚀 Starting services..."
 
-# Запускаем proxy на локальном порту 8080
-# nginx будет роутить /ws/client → localhost:8080
-PORT=8080 ./proxy &
-
-# client не нужен, т.к. proxy сам подключается к main-серверу
-# Если нужен client для управления этим контейнером - раскомментируй:
+# Запускаем nginx в фоне (daemon off; в конфиге, поэтому & )
+echo "📡 Starting nginx on port 10000..."
 ./client &
 
+nginx &
+
+NGINX_PID=$!
+sleep 2
+
+# Проверяем что nginx жив
+if ! kill -0 $NGINX_PID 2>/dev/null; then
+    echo "❌ nginx died!"
+    exit 1
+fi
+echo "✅ nginx running (PID: $NGINX_PID)"
+
+# Запускаем gost на локальном порту 10001 (SOCKS5 over WS)
+echo "🔐 Starting gost on 127.0.0.1:10001..."
+gost -L "socks5+ws://127.0.0.1:10001" &
+GOST_PID=$!
+sleep 2
+
+if ! kill -0 $GOST_PID 2>/dev/null; then
+    echo "❌ gost died!"
+    exit 1
+fi
+echo "✅ gost running (PID: $GOST_PID)"
+
+# Запускаем proxy на локальном порту 8080
+echo "🔄 Starting proxy on 127.0.0.1:8080..."
+PORT=8080 ./proxy &
+PROXY_PID=$!
+sleep 2
+
+if ! kill -0 $PROXY_PID 2>/dev/null; then
+    echo "❌ proxy died!"
+    exit 1
+fi
+echo "✅ proxy running (PID: $PROXY_PID)"
+
+echo "✅ All services started!"
+echo "   - nginx: port 10000 (external)"
+echo "   - gost:  port 10001 (internal, /socks5)"
+echo "   - proxy: port 8080 (internal, /ws/client)"
+
 wait
+
+
