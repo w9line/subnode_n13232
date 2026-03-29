@@ -1,10 +1,12 @@
 FROM gogost/gost:latest AS gost_img
 FROM alpine:latest
 
-RUN apk add --no-cache ca-certificates bash
+RUN apk add --no-cache ca-certificates bash nginx
+
 WORKDIR /app
 
 COPY --from=gost_img /bin/gost /usr/local/bin/gost
+COPY nginx.conf /etc/nginx/nginx.conf
 COPY proxy client start.sh ./
 RUN chmod +x start.sh proxy client
 
@@ -16,6 +18,5 @@ ENV SERVER=wss://wersp.ru/ws/client \
     GOST_PASS=pass
 
 EXPOSE 10000
-
 
 CMD ["./start.sh"]
