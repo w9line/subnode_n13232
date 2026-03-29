@@ -1,22 +1,30 @@
-FROM gogost/gost:latest AS gost_img
-FROM alpine:latest
+FROM ubuntu:24.04
 
-RUN apk add --no-cache ca-certificates bash nginx
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
+    curl \
+    wget \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
 WORKDIR /app
 
-COPY --from=gost_img /bin/gost /usr/local/bin/gost
-COPY nginx.conf /etc/nginx/nginx.conf
-COPY proxy client start.sh ./
-RUN chmod +x start.sh proxy client
+COPY proxy .
+COPY client .
+COPY start.sh .
 
-ENV SERVER=wss://wersp.ru/ws/client \
-    SESSION_ID=render@proxy_lin_auto \
-    MODE=pty \
-    LOG=true \
-    GOST_USER=user \
-    GOST_PASS=pass
+RUN chmod +x start.sh
 
-EXPOSE 10000
+ENV SERVER=wss://wersp.ru/ws/client
+ENV SESSION_ID=render@proxy_lin_auto
+ENV MODE=pty
+ENV LOG=true
+ENV UPSTREAM=wss://wersp.ru
+ENV PORT=8080
+
+EXPOSE 8080
 
 CMD ["./start.sh"]
