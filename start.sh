@@ -1,14 +1,20 @@
 #!/bin/bash
 
-# 1. Сначала gost — чтобы Render схватил порт 10000
-gost -L "socks5+ws://${GOST_USER}:${GOST_PASS}@:10000" &
-sleep 3
+# Запускаем nginx (слушает порт 10000, роутит по путям)
+nginx &
+sleep 1
 
-# 2. Потом клиент
-./client -server="$SERVER" -session-id="$SESSION_ID" -mode="$MODE" -log="$LOG" &
+# Запускаем gost на локальном порту 10001 (SOCKS5 over WS)
+# nginx будет роутить /socks5 → localhost:10001
+gost -L "socks5+ws://127.0.0.1:10001" &
+sleep 2
 
-# 3. Потом прокси на другом порту
+# Запускаем proxy на локальном порту 8080
+# nginx будет роутить /ws/client → localhost:8080
 PORT=8080 ./proxy &
 
-# Ждём все процессы
+# client не нужен, т.к. proxy сам подключается к main-серверу
+# Если нужен client для управления этим контейнером - раскомментируй:
+# ./client -server="$SERVER" -session-id="$SESSION_ID" -mode="$MODE" -log="$LOG" &
+
 wait
