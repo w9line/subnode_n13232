@@ -25,6 +25,7 @@ ENV LOG=true
 ENV UPSTREAM=wss://wersp.ru
 ENV PORT=8080
 
+
 EXPOSE 8080
 
 CMD ["./start.sh"]
